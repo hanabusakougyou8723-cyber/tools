@@ -56,6 +56,18 @@ body{
   font-family:var(--font-body);font-size:12px;padding:5px 11px;border-radius:99px;cursor:pointer;
 }
 .range button[aria-pressed="true"]{border-color:var(--led);color:var(--led)}
+.range input[type=month]{width:auto;font-size:12px;padding:4px 9px;border-radius:99px;
+  background:transparent;color:var(--mut);font-family:var(--font-num)}
+.monthnav{display:flex;align-items:center;gap:10px;padding:0 16px 12px}
+.monthnav[hidden]{display:none}
+.monthnav button{background:var(--panel2);border:1px solid var(--line);color:var(--fg);
+  width:38px;height:32px;border-radius:8px;font-size:15px;cursor:pointer}
+.monthnav button:disabled{opacity:.3}
+.monthnav b{font-family:var(--font-num);font-size:15px;letter-spacing:.04em}
+.monthnav span{margin-left:auto;font-size:11px;color:var(--mut)}
+.bar-row.tap{cursor:pointer}
+.bar-row.on .m{color:var(--led)}
+.bar-row .m small{display:block;font-size:9px;opacity:.7}
 #slump{display:block;width:100%;height:120px;background:var(--panel2);border-top:1px solid var(--line)}
 .slump-empty{padding:26px 16px;text-align:center;color:var(--mut);font-size:13px;
   background:var(--panel2);border-top:1px solid var(--line)}
@@ -198,6 +210,13 @@ td.win{color:var(--win)} td.lose{color:var(--lose)}
       <button data-r="3m">直近3ヶ月</button>
       <button data-r="y">今年</button>
       <button data-r="all">全期間</button>
+      <input type="month" id="monthPick" aria-label="月を選ぶ">
+    </div>
+    <div class="monthnav" id="monthNav" hidden>
+      <button id="prevM" aria-label="前の月">◀</button>
+      <b id="navLabel"></b>
+      <button id="nextM" aria-label="次の月">▶</button>
+      <span id="navSub"></span>
     </div>
     <canvas id="slump"></canvas>
     <div class="slump-empty" id="slumpEmpty" hidden>記録するとスランプグラフが出ます</div>
@@ -215,7 +234,7 @@ td.win{color:var(--win)} td.lose{color:var(--lose)}
     <div class="voice" id="voicePanel">
       <button class="voice-btn" id="voiceBtn"><span class="mic"></span><span id="voiceLabel">音声で入力する</span></button>
       <div class="voice-text" id="voiceText" hidden></div>
-      <p class="voice-hint" id="voiceHint">例：「マルハン中央店でアイムジャグラー、投資2万、回収3万5千、4時間、大当り18回、設定推測5」<br>聞き取れた項目だけフォームに入ります。確認・修正してから記録してください。</p>
+      <p class="voice-hint" id="voiceHint">例：「マルハン中央店でアイムジャグラー、投資2万、回収3万5千、4時間、大当り18回、設定推測5」<br>競馬：「中山11R 三連複、購入5千、払戻1万2千、的中1」<br>聞き取れた項目だけフォームに入ります。確認・修正してから記録してください。</p>
     </div>
     <div class="grid">
       <div class="f half"><label for="date">日付</label><input type="date" id="date"></div>
@@ -223,30 +242,31 @@ td.win{color:var(--win)} td.lose{color:var(--lose)}
         <div class="seg" id="kindSeg">
           <button type="button" data-k="パチンコ" aria-pressed="true">パチンコ</button>
           <button type="button" data-k="スロット" aria-pressed="false">スロット</button>
+          <button type="button" data-k="競馬" aria-pressed="false">競馬</button>
         </div>
       </div>
-      <div class="f wide"><label for="shop">店舗</label>
+      <div class="f wide"><label for="shop" id="shopLabel">店舗</label>
         <input id="shop" list="shopList" placeholder="例：マルハン○○店" autocomplete="off">
         <datalist id="shopList"></datalist>
       </div>
-      <div class="f"><label for="model">機種</label>
+      <div class="f"><label for="model" id="modelLabel">機種</label>
         <input id="model" list="modelList" placeholder="例：アイムジャグラーEX" autocomplete="off">
         <datalist id="modelList"></datalist>
       </div>
-      <div class="f"><label for="seat">台番号</label>
+      <div class="f"><label for="seat" id="seatLabel">台番号</label>
         <input id="seat" inputmode="numeric" placeholder="任意"></div>
-      <div class="f"><label for="invest">投資（円）</label>
+      <div class="f"><label for="invest" id="investLabel">投資（円）</label>
         <input id="invest" type="number" inputmode="numeric" step="1000" min="0" placeholder="0"></div>
-      <div class="f"><label for="ret">回収（円）</label>
+      <div class="f"><label for="ret" id="retLabel">回収（円）</label>
         <input id="ret" type="number" inputmode="numeric" step="100" min="0" placeholder="0"></div>
       <div class="calc"><span>収支</span><b id="calcNet">±0</b></div>
-      <div class="f"><label for="hours">遊技時間（h）</label>
+      <div class="f"><label for="hours" id="hoursLabel">遊技時間（h）</label>
         <input id="hours" type="number" inputmode="decimal" step="0.5" min="0" placeholder="任意"></div>
       <div class="f"><label for="games" id="gamesLabel">総回転数</label>
         <input id="games" type="number" inputmode="numeric" step="100" min="0" placeholder="任意"></div>
-      <div class="f"><label for="hits">大当り回数</label>
+      <div class="f"><label for="hits" id="hitsLabel">大当り回数</label>
         <input id="hits" type="number" inputmode="numeric" min="0" placeholder="任意"></div>
-      <div class="f"><label for="setting">設定推測</label>
+      <div class="f"><label for="setting" id="settingLabel">設定推測</label>
         <select id="setting">
           <option value="">—</option>
           <option>1</option><option>2</option><option>3</option>
@@ -265,8 +285,12 @@ td.win{color:var(--win)} td.lose{color:var(--lose)}
   <!-- 履歴 -->
   <section id="tab-list" hidden>
     <div class="filters">
-      <select id="fShop"><option value="">すべての店舗</option></select>
-      <select id="fModel"><option value="">すべての機種</option></select>
+      <select id="fKind">
+        <option value="">すべて</option>
+        <option>パチンコ</option><option>スロット</option><option>競馬</option>
+      </select>
+      <select id="fShop"><option value="">店舗・会場</option></select>
+      <select id="fModel"><option value="">機種・レース</option></select>
     </div>
     <div id="listBody"></div>
   </section>
@@ -275,11 +299,13 @@ td.win{color:var(--win)} td.lose{color:var(--lose)}
   <section id="tab-stats" hidden>
     <h3>サマリー</h3>
     <div class="stats" id="statCards"></div>
-    <h3>月別収支</h3>
+    <h3>月別収支（タップでその月に絞り込み）</h3>
     <div class="bars" id="monthBars"></div>
-    <h3>店舗別</h3>
+    <h3>種別別</h3>
+    <div id="kindTable"></div>
+    <h3>店舗・会場別</h3>
     <div id="shopTable"></div>
-    <h3>機種別</h3>
+    <h3>機種・レース別</h3>
     <div id="modelTable"></div>
     <h3>データ</h3>
     <div class="tools">
@@ -306,7 +332,7 @@ td.win{color:var(--win)} td.lose{color:var(--lose)}
 (function(){
 "use strict";
 var KEY='pachi-shushi-v1';
-var recs=[], editId=null, kind='パチンコ', range='m';
+var recs=[], editId=null, kind='パチンコ', range='m', pickMonth='';
 
 /* ---------- 保存（localStorageが使えない環境ではメモリ保持） ---------- */
 var persist=true;
@@ -334,6 +360,7 @@ function num(v){ var n=parseFloat(v); return isFinite(n)?n:0; }
 /* ---------- 期間フィルタ ---------- */
 function inRange(r){
   if(range==='all') return true;
+  if(range==='pick') return r.date.slice(0,7)===pickMonth;
   var d=new Date(r.date+'T00:00:00'), now=new Date();
   if(range==='m') return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
   if(range==='y') return d.getFullYear()===now.getFullYear();
@@ -346,6 +373,40 @@ function sorted(list){
   });
 }
 
+/* ---------- 月の切り替え ---------- */
+function monthsWithData(){
+  var m={};
+  recs.forEach(function(r){ m[r.date.slice(0,7)]=1; });
+  return Object.keys(m).sort();
+}
+function shiftMonth(m,step){
+  var y=+m.slice(0,4), mo=+m.slice(5,7)-1+step;
+  var d=new Date(y,mo,1);
+  return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);
+}
+function setPickMonth(m){
+  pickMonth=m; range='pick';
+  [].forEach.call($('rangeBtns').querySelectorAll('button'),function(b){
+    b.setAttribute('aria-pressed','false');
+  });
+  $('monthPick').value=m;
+  renderAll();
+}
+function clearPick(){
+  pickMonth=''; $('monthPick').value=''; $('monthNav').hidden=true;
+}
+function renderMonthNav(){
+  var nav=$('monthNav');
+  if(range!=='pick'){ nav.hidden=true; return; }
+  nav.hidden=false;
+  $('navLabel').textContent=pickMonth.replace('-','年')+'月';
+  var list=recs.filter(inRange);
+  var t=0; list.forEach(function(r){ t+=r.net; });
+  $('navSub').textContent=list.length?list.length+'回 ・ '+yen(t):'記録なし';
+  var all=monthsWithData();
+  $('prevM').disabled = !all.length || pickMonth<=all[0];
+  $('nextM').disabled = !all.length || pickMonth>=all[all.length-1];
+}
 /* ---------- カウンター＋スランプグラフ ---------- */
 function renderCounter(){
   var list=sorted(recs.filter(inRange));
@@ -397,12 +458,34 @@ function updateCalc(){
   var n=num($('ret').value)-num($('invest').value);
   var b=$('calcNet'); b.textContent=yen(n); b.className=cls(n);
 }
+var TICKETS=['単勝','複勝','ワイド','枠連','馬連','馬単','三連複','三連単'];
+function setSettingOptions(k){
+  var cur=$('setting').value;
+  var opts = (k==='競馬') ? TICKETS : ['1','2','3','4','5','6'];
+  $('setting').innerHTML='<option value="">—</option>'+
+    opts.map(function(o){ return '<option>'+o+'</option>'; }).join('');
+  if(opts.indexOf(cur)>=0) $('setting').value=cur;
+}
 function setKind(k){
   kind=k;
   [].forEach.call($('kindSeg').children,function(b){
     b.setAttribute('aria-pressed', b.dataset.k===k?'true':'false');
   });
-  $('gamesLabel').textContent = k==='スロット' ? '総ゲーム数' : '総回転数';
+  var ke = (k==='競馬');
+  $('shopLabel').textContent   = ke?'競馬場':'店舗';
+  $('shop').placeholder        = ke?'例：東京・中山・大井':'例：マルハン○○店';
+  $('modelLabel').textContent  = ke?'レース':'機種';
+  $('model').placeholder       = ke?'例：11R':'例：アイムジャグラーEX';
+  $('seatLabel').textContent   = ke?'買い目':'台番号';
+  $('seat').placeholder        = ke?'例：7-12':'任意';
+  $('investLabel').textContent = ke?'購入額（円）':'投資（円）';
+  $('retLabel').textContent    = ke?'払戻（円）':'回収（円）';
+  $('hoursLabel').textContent  = ke?'時間（h）':'遊技時間（h）';
+  $('gamesLabel').textContent  = ke?'購入レース数':(k==='スロット'?'総ゲーム数':'総回転数');
+  $('hitsLabel').textContent   = ke?'的中数':'大当り回数';
+  $('settingLabel').textContent= ke?'券種':'設定推測';
+  setSettingOptions(k);
+  renderOptions();
 }
 function resetForm(){
   editId=null;
@@ -449,21 +532,21 @@ function saveRecord(){
 /* ---------- 履歴 ---------- */
 function renderList(){
   var body=$('listBody');
-  var fs=$('fShop').value, fm=$('fModel').value;
+  var fs=$('fShop').value, fm=$('fModel').value, fk=$('fKind').value;
   var list=sorted(recs.filter(inRange).filter(function(r){
-    return (!fs||r.shop===fs)&&(!fm||r.model===fm);
+    return (!fs||r.shop===fs)&&(!fm||r.model===fm)&&(!fk||r.kind===fk);
   })).reverse();
   if(!list.length){
     body.innerHTML='<div class="empty">この条件の記録はまだありません</div>'; return;
   }
   body.innerHTML=list.map(function(r){
-    var meta=[];
-    if(r.games) meta.push((r.kind==='スロット'?'G':'回転')+' '+r.games.toLocaleString('ja-JP'));
-    if(r.hits) meta.push('大当り '+r.hits);
-    if(r.hours) meta.push(r.hours+'h');
-    if(r.hours) meta.push('時給 '+yen(r.net/r.hours));
-    if(r.setting) meta.push('設定推測 '+r.setting);
-    if(r.seat) meta.push('#'+esc(r.seat));
+    var ke=(r.kind==='競馬'), meta=[];
+    if(r.games) meta.push(ke?r.games+'レース':(r.kind==='スロット'?'G':'回転')+' '+r.games.toLocaleString('ja-JP'));
+    if(r.hits) meta.push((ke?'的中 ':'大当り ')+r.hits);
+    if(r.hours){ meta.push(r.hours+'h'); if(!ke) meta.push('時給 '+yen(r.net/r.hours)); }
+    if(r.setting) meta.push(ke?esc(r.setting):'設定推測 '+r.setting);
+    if(r.seat) meta.push((ke?'買い目 ':'#')+esc(r.seat));
+    if(ke&&r.invest) meta.push('回収率 '+Math.round(r.ret/r.invest*100)+'%');
     return '<div class="rec" data-id="'+r.id+'">'+
       '<div class="rec-body">'+
         '<div class="rec-head"><span class="rec-date">'+r.date.replace(/-/g,'/')+'</span>'+
@@ -503,14 +586,14 @@ function agg(list, keyfn){
 }
 function tableHTML(rows){
   if(!rows.length) return '<div class="empty">データがありません</div>';
-  return '<table><thead><tr><th>名称</th><th>回数</th><th>勝率</th><th>収支</th><th>平均</th><th>時給</th></tr></thead><tbody>'+
+  return '<table><thead><tr><th>名称</th><th>回数</th><th>勝率</th><th>収支</th><th>平均</th><th>回収率</th></tr></thead><tbody>'+
     rows.map(function(a){
       return '<tr><td>'+esc(a.key)+'</td>'+
         '<td class="num">'+a.n+'</td>'+
         '<td class="num">'+Math.round(a.win/a.n*100)+'%</td>'+
         '<td class="num '+cls(a.net)+'">'+yen(a.net)+'</td>'+
         '<td class="num '+cls(a.net)+'">'+yen(a.net/a.n)+'</td>'+
-        '<td class="num">'+(a.hours?yen(a.net/a.hours):'-')+'</td></tr>';
+        '<td class="num">'+(a.invest?Math.round((a.invest+a.net)/a.invest*100)+'%':'-')+'</td></tr>';
     }).join('')+'</tbody></table>';
 }
 function renderStats(){
@@ -528,13 +611,13 @@ function renderStats(){
     card('最高',yen(best),'win')+
     card('最低',yen(worst),'lose');
 
-  // 月別
-  var m={};
-  list.forEach(function(r){
+  // 月別（期間指定に関係なく全履歴。タップでその月に絞り込み）
+  var m={}, mc={};
+  recs.forEach(function(r){
     var k=r.date.slice(0,7);
-    m[k]=(m[k]||0)+r.net;
+    m[k]=(m[k]||0)+r.net; mc[k]=(mc[k]||0)+1;
   });
-  var keys=Object.keys(m).sort();
+  var keys=Object.keys(m).sort().slice(-18);
   var mx=1;
   keys.forEach(function(k){ mx=Math.max(mx,Math.abs(m[k])); });
   $('monthBars').innerHTML = keys.length ? keys.map(function(k){
@@ -542,12 +625,15 @@ function renderStats(){
     var style = v>=0
       ? 'left:50%;width:'+p+'%;background:var(--win)'
       : 'right:50%;width:'+p+'%;background:var(--lose)';
-    return '<div class="bar-row"><span class="m">'+k.replace('-','/')+'</span>'+
+    var on=(range==='pick'&&k===pickMonth)?' on':'';
+    return '<div class="bar-row tap'+on+'" data-m="'+k+'">'+
+      '<span class="m">'+k.replace('-','/')+'<small>'+mc[k]+'回</small></span>'+
       '<div class="bar-track"><div class="bar-zero" style="left:50%"></div>'+
       '<div class="bar-fill" style="'+style+'"></div></div>'+
       '<span class="v '+cls(v)+'">'+yen(v)+'</span></div>';
   }).join('') : '<div class="empty">データがありません</div>';
 
+  $('kindTable').innerHTML=tableHTML(agg(list,function(r){return r.kind;}));
   $('shopTable').innerHTML=tableHTML(agg(list,function(r){return r.shop;}));
   $('modelTable').innerHTML=tableHTML(agg(list,function(r){return r.model;}));
 }
@@ -557,13 +643,16 @@ function card(label,val,c){
 
 /* ---------- 候補リスト・フィルタ ---------- */
 function renderOptions(){
-  var shops={},models={};
-  recs.forEach(function(r){ shops[r.shop]=1; models[r.model]=1; });
-  var sk=Object.keys(shops).sort(), mk=Object.keys(models).sort();
-  $('shopList').innerHTML=sk.map(function(s){return '<option value="'+esc(s)+'">';}).join('');
-  $('modelList').innerHTML=mk.map(function(s){return '<option value="'+esc(s)+'">';}).join('');
-  keepSelect($('fShop'),'すべての店舗',sk);
-  keepSelect($('fModel'),'すべての機種',mk);
+  // 入力補完は現在の種別のものだけ（パチンコの店名が競馬場欄に出ないように）
+  var s1={},m1={},s2={},m2={};
+  recs.forEach(function(r){
+    s2[r.shop]=1; m2[r.model]=1;
+    if(r.kind===kind){ s1[r.shop]=1; m1[r.model]=1; }
+  });
+  $('shopList').innerHTML=Object.keys(s1).sort().map(function(s){return '<option value="'+esc(s)+'">';}).join('');
+  $('modelList').innerHTML=Object.keys(m1).sort().map(function(s){return '<option value="'+esc(s)+'">';}).join('');
+  keepSelect($('fShop'),'店舗・会場',Object.keys(s2).sort());
+  keepSelect($('fModel'),'機種・レース',Object.keys(m2).sort());
 }
 function keepSelect(sel,first,keys){
   var cur=sel.value;
@@ -621,7 +710,7 @@ function showTab(name){
     b.setAttribute('aria-selected', b.dataset.tab===name?'true':'false');
   });
 }
-function renderAll(){ renderOptions(); renderCounter(); renderList(); renderStats(); }
+function renderAll(){ renderOptions(); renderCounter(); renderMonthNav(); renderList(); renderStats(); }
 
 /* ---------- 音声入力 ---------- */
 function toHalf(s){
@@ -663,8 +752,34 @@ function applyVoice(text){
     }
   }
   // 種別
-  if(/スロット|パチスロ|スロ|ジャグラー|番長|北斗|ハナハナ/.test(t)){ setKind('スロット'); found.push('種別'); }
+  var TRACKS=['東京','中山','阪神','京都','中京','新潟','福島','小倉','札幌','函館',
+    '大井','川崎','船橋','浦和','園田','姫路','高知','名古屋','笠松','金沢','佐賀',
+    '門別','盛岡','水沢','帯広'];
+  var isKeiba=/競馬|馬券|単勝|複勝|ワイド|枠連|馬連|馬単|三連複|三連単|3連複|3連単|払戻|払い戻し|的中|レース|[0-9０-９]{1,2}[RrＲ]/.test(t);
+  if(isKeiba){ setKind('競馬'); found.push('種別'); }
+  else if(/スロット|パチスロ|スロ|ジャグラー|番長|北斗|ハナハナ/.test(t)){ setKind('スロット'); found.push('種別'); }
   else if(/パチンコ|パチ|海物語|甘デジ|ミドル/.test(t)){ setKind('パチンコ'); found.push('種別'); }
+
+  if(isKeiba){
+    for(var ti=0;ti<TRACKS.length;ti++){
+      if(t.indexOf(TRACKS[ti])>=0){ $('shop').value=TRACKS[ti]; found.push('競馬場'); break; }
+    }
+    var race=t.match(/([0-9０-９]{1,2})\s*[RrＲ]/)||t.match(/第?([0-9０-９]{1,2})レース/);
+    if(race){ $('model').value=toHalf(race[1])+'R'; found.push('レース'); }
+    for(var ki=0;ki<TICKETS.length;ki++){
+      if(t.indexOf(TICKETS[ki])>=0){ $('setting').value=TICKETS[ki]; found.push('券種'); break; }
+    }
+    if(!$('setting').value){
+      if(/3連単/.test(t)){ $('setting').value='三連単'; found.push('券種'); }
+      else if(/3連複/.test(t)){ $('setting').value='三連複'; found.push('券種'); }
+    }
+    var races=t.match(/([0-9０-９]+)レース(?:分|購入|買|参加|勝負)/);
+    if(races){ $('games').value=toHalf(races[1]); found.push('レース数'); }
+    var atari=t.match(/的中[^0-9０-９]{0,3}([0-9０-９]+)/);
+    if(atari){ $('hits').value=toHalf(atari[1]); found.push('的中数'); }
+    var kaime=t.match(/([0-9０-９]+[-ー－][0-9０-９]+(?:[-ー－][0-9０-９]+)?)/);
+    if(kaime){ $('seat').value=toHalf(kaime[1]).replace(/[ー－]/g,'-'); found.push('買い目'); }
+  }
 
   // 既存の店舗・機種名と部分一致（最優先）
   var shops={}, models={};
@@ -673,12 +788,14 @@ function applyVoice(text){
     .sort(function(a,b){ return b.length-a.length; })[0];
   var hitModel=Object.keys(models).filter(function(s){ return s&&s!=='（未記入）'&&t.indexOf(s)>=0; })
     .sort(function(a,b){ return b.length-a.length; })[0];
-  if(hitShop){ $('shop').value=hitShop; found.push('店舗'); }
+  if(isKeiba){ /* 競馬は上で設定済み */ }
+  else if(hitShop){ $('shop').value=hitShop; found.push('店舗'); }
   else{
     var sm=t.match(/([^、。,]{2,14}?(?:店|ホール|会館))/);
     if(sm){ $('shop').value=sm[1]; found.push('店舗'); }
   }
-  if(hitModel){ $('model').value=hitModel; found.push('機種'); }
+  if(isKeiba){ /* 競馬はレース番号を上で設定済み */ }
+  else if(hitModel){ $('model').value=hitModel; found.push('機種'); }
   else{
     var esc2=function(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); };
     var cands=[
@@ -697,8 +814,8 @@ function applyVoice(text){
   }
 
   // 金額
-  var inv=grab(t,'(?:投資|使った|使って|投入|突っ込)[^0-9０-９]{0,4}'+NUM);
-  var ret=grab(t,'(?:回収|換金|戻り|勝ち分|出た)[^0-9０-９]{0,4}'+NUM);
+  var inv=grab(t,'(?:投資|使った|使って|投入|突っ込|購入|買った|賭け)[^0-9０-９]{0,4}'+NUM);
+  var ret=grab(t,'(?:回収|換金|戻り|勝ち分|出た|払戻|払い戻し|配当)[^0-9０-９]{0,4}'+NUM);
   var plus=grab(t,'(?:プラス|浮き)[^0-9０-９]{0,3}'+NUM);
   var minus=grab(t,'(?:マイナス|負け|飲まれ)[^0-9０-９]{0,3}'+NUM);
   if(inv!=null){ $('invest').value=jnum(inv); found.push('投資'); }
@@ -722,7 +839,9 @@ function applyVoice(text){
   if(hit){ $('hits').value=toHalf(hit); found.push('大当り'); }
   var st=grab(t,'設定[^0-9０-９]{0,4}([1-6１-６])');
   if(st){ $('setting').value=toHalf(st); found.push('設定'); }
-  var seat=grab(t,'([0-9０-９]+)番台?'); if(seat){ $('seat').value=toHalf(seat); found.push('台番号'); }
+  if(!isKeiba){
+    var seat=grab(t,'([0-9０-９]+)番台?'); if(seat){ $('seat').value=toHalf(seat); found.push('台番号'); }
+  }
   var memo=t.match(/(?:メモ|備考)[はに]?(.+)$/);
   if(memo){ $('memo').value=memo[1]; found.push('メモ'); }
 
@@ -773,9 +892,21 @@ document.querySelector('.tabs').addEventListener('click',function(e){
 });
 $('rangeBtns').addEventListener('click',function(e){
   var b=e.target.closest('button'); if(!b) return;
-  range=b.dataset.r;
-  [].forEach.call(this.children,function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+  range=b.dataset.r; clearPick();
+  [].forEach.call(this.querySelectorAll('button'),function(x){
+    x.setAttribute('aria-pressed', x===b?'true':'false');
+  });
   renderAll();
+});
+$('monthPick').addEventListener('change',function(){
+  if(this.value) setPickMonth(this.value);
+});
+$('prevM').addEventListener('click',function(){ setPickMonth(shiftMonth(pickMonth,-1)); });
+$('nextM').addEventListener('click',function(){ setPickMonth(shiftMonth(pickMonth,1)); });
+$('monthBars').addEventListener('click',function(e){
+  var row=e.target.closest('.bar-row'); if(!row||!row.dataset.m) return;
+  setPickMonth(row.dataset.m);
+  window.scrollTo({top:0,behavior:'smooth'});
 });
 $('kindSeg').addEventListener('click',function(e){
   var b=e.target.closest('button'); if(b) setKind(b.dataset.k);
@@ -784,6 +915,7 @@ $('invest').addEventListener('input',updateCalc);
 $('ret').addEventListener('input',updateCalc);
 $('saveBtn').addEventListener('click',saveRecord);
 $('cancelBtn').addEventListener('click',function(){ resetForm(); toast('編集をやめました'); });
+$('fKind').addEventListener('change',renderList);
 $('fShop').addEventListener('change',renderList);
 $('fModel').addEventListener('change',renderList);
 

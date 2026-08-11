@@ -1,6 +1,6 @@
 /* 実戦収支ノート — Service Worker
    アプリを更新したら CACHE の数字を上げてください（例：v1 → v2） */
-var CACHE = 'shushi-v1';
+var CACHE = 'shushi-v3';
 var ASSETS = [
   './',
   './index.html',
